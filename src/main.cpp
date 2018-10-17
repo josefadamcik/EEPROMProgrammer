@@ -6,6 +6,10 @@ static const uint8_t shiftLatchPin = 4;
 static const uint8_t eepromIo0 = 5;
 static const uint8_t eepromIo7 = 12;
 static const uint8_t eepromWriteEn = 13;
+static const uint8_t bufferSize = 16;
+static const int maxAddress = 0x7FFF;
+byte buffer[bufferSize];
+
 // #define SHIFT_DATA 2
 // #define SHIFT_CLK 3
 // #define SHIFT_LATCH 4
@@ -94,13 +98,6 @@ void printContents() {
   }
 }
 
-
-// 4-bit hex decoder for common anode 7-segment display
-byte data[] = { 0x81, 0xcf, 0x92, 0x86, 0xcc, 0xa4, 0xa0, 0x8f, 0x80, 0x84, 0x88, 0xe0, 0xb1, 0xc2, 0xb0, 0xb9 };
-
-// 4-bit hex decoder for common cathode 7-segment display
-// byte data[] = { 0x7e, 0x30, 0x6d, 0x79, 0x33, 0x5b, 0x5f, 0x70, 0x7f, 0x7b, 0x77, 0x1f, 0x4e, 0x3d, 0x4f, 0x47 };
-
 void eraseEEPROM() {
   Serial.print("Erasing EEPROM");
   //TODO: this is not the max address
@@ -125,35 +122,71 @@ void setup() {
   
   Serial.begin(57600);
   Serial.println();
-
-  // Erase entire EEPROM
-  //eraseEEPROM();
-
-
-  // Program data bytes
-
-  // Serial.print("Programming EEPROM");
-  // for (int address = 0; address < sizeof(data); address += 1) {
-  //   writeEEPROM(address, data[address]);
-
-  //   if (address % 64 == 0) {
-  //     Serial.print(".");
-  //   }
-  // }
-  // Serial.println(" done");
-
-  // // Read and print out the contents of the EERPROM
-  // Serial.println("Reading EEPROM");
-  // printContents();
-
-  // Serial.print(5);
   Serial.println("======");
   Serial.println("EEPROM PROGRAMMER");
   Serial.println("p - prints human readable contents of the memory");
+  Serial.println("wABCD - starts writing mode, ABCD is starting hex address. That will wait for 16 bytes of input to write to the adress");
   Serial.println("======");
 }
 
+int hexToNum(byte hex) {
+  if (hex >= 'a' && hex <= 'f') {
+    return hex - 'a' + 10;
+  } else if (hex >= 'A' && hex <= 'F') {
+    return hex - 'A' + 10; 
+  } else if (hex >= '0' && hex <= '9') {
+    return hex - '0';
+  } else {
+    return 0;
+  }
+}
 
+void writeFromSerial() {
+  Serial.print("w");
+  //read adress
+  int address = 0;
+  byte addresDigitCount = 0;
+  while (addresDigitCount < 4) {
+      while (Serial.available() == 0);
+      address = address << 4;
+      byte readByte = hexToNum(Serial.read());
+      Serial.print(readByte, HEX);
+      address |= readByte;
+      addresDigitCount++;
+  }
+  if (address > maxAddress) {
+    Serial.println("=E:Address out of range");
+    return;
+  }
+  Serial.println("=OK:expectingData");
+  
+  //read data intoBuffer
+  byte bufferIndex = 0;
+  while (bufferIndex < bufferSize) {
+      //read two chars per byte
+      byte charIndex = 0;
+      byte value = 0;
+      while  (charIndex < 2) {
+          value = value << 4;
+          while (Serial.available() == 0);
+          byte readByte = hexToNum(Serial.read());
+          Serial.print(readByte, HEX);
+          value |= readByte;
+          charIndex++;
+      }
+      //store them in buffuer
+      buffer[bufferIndex++] = value;
+  }
+  Serial.println();
+
+  //buffer is full, write it
+  setAddress(address, false);
+
+  for (bufferIndex = 0; bufferIndex < bufferSize; bufferIndex++) {
+    Serial.println(buffer[bufferIndex], HEX);
+  }
+  Serial.println("=DONE");
+}
 
 void loop() {
   
@@ -163,6 +196,8 @@ void loop() {
       case 'p':
         printContents();
         break;
+      case 'w':
+        writeFromSerial();
     }
   }
 }
