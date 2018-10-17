@@ -26,13 +26,28 @@ void setAddress(int address, bool outputEnable) {
 }
 
 
+
+
+void initIoPins(uint8_t mode) {
+  for (int pin = eepromIo0; pin <= eepromIo7; pin += 1) {
+    pinMode(pin, mode);
+  }
+}
+
+
+void initIoInput() {
+  initIoPins(INPUT);
+}
+
+void initIoOutput() {
+  initIoPins(OUTPUT);
+}
+
 /*
  * Read a byte from the EEPROM at the specified address.
  */
 byte readEEPROM(int address) {
-  for (int pin = eepromIo0; pin <= eepromIo7; pin += 1) {
-    pinMode(pin, INPUT);
-  }
+  initIoInput();
   setAddress(address, /*outputEnable*/ true);
 
   byte data = 0;
@@ -42,15 +57,12 @@ byte readEEPROM(int address) {
   return data;
 }
 
-
 /*
  * Write a byte to the EEPROM at the specified address.
  */
 void writeEEPROM(int address, byte data) {
   setAddress(address, /*outputEnable*/ false);
-  for (int pin = eepromIo0; pin <= eepromIo7; pin += 1) {
-    pinMode(pin, OUTPUT);
-  }
+  initIoOutput();
 
   for (int pin = eepromIo0; pin <= eepromIo7; pin += 1) {
     digitalWrite(pin, data & 1);
@@ -120,22 +132,37 @@ void setup() {
 
   // Program data bytes
 
-  Serial.print("Programming EEPROM");
-  for (int address = 0; address < sizeof(data); address += 1) {
-    writeEEPROM(address, data[address]);
+  // Serial.print("Programming EEPROM");
+  // for (int address = 0; address < sizeof(data); address += 1) {
+  //   writeEEPROM(address, data[address]);
 
-    if (address % 64 == 0) {
-      Serial.print(".");
-    }
-  }
-  Serial.println(" done");
+  //   if (address % 64 == 0) {
+  //     Serial.print(".");
+  //   }
+  // }
+  // Serial.println(" done");
 
-  // Read and print out the contents of the EERPROM
-  Serial.println("Reading EEPROM");
-  printContents();
+  // // Read and print out the contents of the EERPROM
+  // Serial.println("Reading EEPROM");
+  // printContents();
+
+  // Serial.print(5);
+  Serial.println("======");
+  Serial.println("EEPROM PROGRAMMER");
+  Serial.println("p - prints human readable contents of the memory");
+  Serial.println("======");
 }
 
 
+
 void loop() {
-  //nop
+  
+  if (Serial.available() > 0) {
+    byte incomingByte = Serial.read();
+    switch(incomingByte) {
+      case 'p':
+        printContents();
+        break;
+    }
+  }
 }
