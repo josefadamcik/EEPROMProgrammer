@@ -1,9 +1,10 @@
 #include <Arduino.h>
 #include "EEPROM.h"
-
+#include "SerialReader.h"
 
 byte buffer[bufferSize];
 EEPROM eeprom;
+SerialReader serialReader;
 
 /*
  * Read the contents of the EEPROM and print them to the serial monitor.
@@ -41,77 +42,18 @@ void printHelp() {
     Serial.println("======");
 }
 
-int hexToNum(byte hex) {
-    if (hex >= 'a' && hex <= 'f') {
-        return hex - 'a' + 10;
-    } else if (hex >= 'A' && hex <= 'F') {
-        return hex - 'A' + 10;
-    } else if (hex >= '0' && hex <= '9') {
-        return hex - '0';
-    } else {
-        return 0;
-    }
-}
-
-unsigned int readAddressFromSerial() {
-    unsigned int address = 0;
-    byte addresDigitCount = 0;
-    while (addresDigitCount < 4) {
-        while (Serial.available() == 0)
-            ;
-        byte readByte = hexToNum(Serial.read());
-        Serial.print(readByte, HEX);
-        address = address << 4;
-        address |= readByte;
-        addresDigitCount++;
-    }
-    return address;
-}
-
-unsigned int readHalfAddressFromSerial() {
-    unsigned int address = 0;
-    byte addresDigitCount = 0;
-    while (addresDigitCount < 2) {
-        while (Serial.available() == 0)
-            ;
-        byte readByte = hexToNum(Serial.read());
-        Serial.print(readByte, HEX);
-        address = address << 4;
-        address |= readByte;
-        addresDigitCount++;
-    }
-    address =
-        address << 8;  // we have read the most significant 2 bytes, so shift
-    return address;
-}
 
 void processWriteFromSerial() {
     Serial.print("w");
-    unsigned int address = readAddressFromSerial();
+    unsigned int address = serialReader.readAddressFromSerial();
     if (address > maxAddress - 0xF) {
         Serial.println("=E:Address out of range");
         return;
     }
     Serial.println("=OK:expectingData");
 
-    // read data intoBuffer
-    byte bufferIndex = 0;
-    while (bufferIndex < bufferSize) {
-        // read two chars per byte
-        byte charIndex = 0;
-        byte value = 0;
-        while (charIndex < 2) {
-            value = value << 4;
-            while (Serial.available() == 0)
-                ;
-            byte readByte = hexToNum(Serial.read());
-            Serial.print(readByte, HEX);
-            value |= readByte;
-            charIndex++;
-        }
-        // store them in buffuer
-        buffer[bufferIndex++] = value;
-    }
+    serialReader.readHexFromSerialToBuffer(buffer, bufferSize);
+
     Serial.println();
     Serial.println("=DATAOK");
     // buffer is full, write it
@@ -126,7 +68,7 @@ void processWriteFromSerial() {
 
 void processDump() {
     Serial.print("d");
-    unsigned int address = readHalfAddressFromSerial();
+    unsigned int address = serialReader.readHalfAddressFromSerial();
     if (address > maxAddress - 0xFF) {
         Serial.println("=E:Address out of range");
         return;
