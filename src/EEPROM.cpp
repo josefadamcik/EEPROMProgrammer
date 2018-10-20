@@ -28,8 +28,8 @@ void EEPROM::setup() {
 void EEPROM::writeEEPROM(unsigned int address, byte data) {
     initIoOutput();
     setAddress(address, /*outputEnable*/ false);
-    for (int pin = eepromIo0; pin <= eepromIo7; pin += 1) {
-        digitalWrite(pin, data & 1);
+    for (int pin = 0; pin <= 7; pin += 1) {
+        digitalWrite(eepromIo[pin], data & 1);
         data = data >> 1;
     }
     digitalWrite(eepromWriteEn, LOW);
@@ -43,8 +43,8 @@ byte EEPROM::readEEPROM(unsigned int address) {
     setAddress(address, /*outputEnable*/ true);
 
     byte data = 0;
-    for (int pin = eepromIo7; pin >= eepromIo0; pin -= 1) {
-        data = (data << 1) + digitalRead(pin);
+    for (int pin = 7; pin >= 0; pin -= 1) {
+        data = (data << 1) + digitalRead(eepromIo[pin]);
     }
     return data;
 }
@@ -64,8 +64,8 @@ void EEPROM::setAddress(unsigned int address, bool outputEnable) {
 }
 
 void EEPROM::initIoPins(uint8_t mode) {
-    for (int pin = eepromIo0; pin <= eepromIo7; pin += 1) {
-        pinMode(pin, mode);
+    for (int pin = 0; pin <= 7; pin += 1) {
+        pinMode(eepromIo[pin], mode);
     }
 }
 
