@@ -2,6 +2,11 @@
 
 void EEPROM::writeBuffer(unsigned int address, byte* buffer, byte bufferSize) {
     setAddress(address, false);
+    // for (int i = 0; i < bufferSize; i++) {
+    //     Serial.print(buffer[i]);
+    //     Serial.print(" ");
+    //     Serial.println(buffer[i], HEX);
+    // }
     for (unsigned int bufferIndex = 0; bufferIndex < bufferSize;
          bufferIndex++) {
         writeEEPROM(address++, buffer[bufferIndex]);
@@ -27,20 +32,29 @@ void EEPROM::setup() {
  */
 void EEPROM::writeEEPROM(unsigned int address, byte data) {
     initIoOutput();
+    // Serial.print("D:"); Serial.print(data, HEX);Serial.print(" ");
     setAddress(address, /*outputEnable*/ false);
     for (int pin = 0; pin <= 7; pin += 1) {
         digitalWrite(eepromIo[pin], data & 1);
         data = data >> 1;
     }
     digitalWrite(eepromWriteEn, LOW);
-    delayMicroseconds(1);
+    delayMicroseconds(10);
     digitalWrite(eepromWriteEn, HIGH);
     delay(10);
+
+    //DEBUG check
+    // byte check = readEEPROM(address);
+    // Serial.print("CH:");
+    // Serial.print(check, HEX);
+    // Serial.print(" ");
+    // Serial.println(check);
 }
 
 byte EEPROM::readEEPROM(unsigned int address) {
     initIoInput();
     setAddress(address, /*outputEnable*/ true);
+    delay(1);
 
     byte data = 0;
     for (int pin = 7; pin >= 0; pin -= 1) {
