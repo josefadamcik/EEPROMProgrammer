@@ -10,7 +10,7 @@ SerialReader serialReader;
 void printBuffer(unsigned int startAddress, byte* data) {
     char buf[80];
     sprintf(buf,
-            "%04x:  %02x %02x %02x %02x %02x %02x %02x %02x   %02x %02x "
+            "%04x:  %02x %02x %02x %02x %02x %02x %02x %02x  %02x %02x "
             "%02x %02x %02x %02x %02x %02x",
             startAddress, data[0], data[1], data[2], data[3], data[4], data[5],
             data[6], data[7], data[8], data[9], data[10], data[11],
@@ -90,8 +90,6 @@ void processReadToSerial() {
     Serial.println();
     eeprom.readToBuffer(address, data, 16);
     printBuffer(address, data);
-
-    Serial.println("=DONE");
 
     Serial.println("=DONE");
 }

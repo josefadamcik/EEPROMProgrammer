@@ -54,7 +54,6 @@ void EEPROM::writeEEPROM(unsigned int address, byte data) {
 byte EEPROM::readEEPROM(unsigned int address) {
     initIoInput();
     setAddress(address, /*outputEnable*/ true);
-    delay(1);
 
     byte data = 0;
     for (int pin = 7; pin >= 0; pin -= 1) {

@@ -29,7 +29,7 @@ unsigned int SerialReader::readHalfAddressFromSerial() {
         addresDigitCount++;
     }
     address =
-        address << 8;  // we have read the most significant 2 bytes, so shift
+        address << 8;  // we have read the most significant byte, so shift
     return address;
 }
 
